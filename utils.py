@@ -1,13 +1,15 @@
-import pytesseract
+import easyocr
 import google.generativeai as genai
 import json
 import matplotlib.pyplot as plt
 import re
 import cv2 as cv
+reader = easyocr.Reader(['en'])
 
 
 def extract_text_from_image(img):
-    text = pytesseract.image_to_string(img, lang='eng')
+    lines = reader.readtext(img, detail=0, paragraph=True)
+    text = "\n".join(lines)
     return text
 
 def structure_with_gemini(extracted_text, api_key):
