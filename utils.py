@@ -1,11 +1,9 @@
 import pytesseract
-from PIL import Image
 import google.generativeai as genai
 import json
 import matplotlib.pyplot as plt
 import re
 import cv2 as cv
-
 
 
 def extract_text_from_image(img):

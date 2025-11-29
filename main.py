@@ -1,6 +1,5 @@
 from fastapi import FastAPI, HTTPException
 import cv2 as cv
-from PIL import Image
 import requests
 import numpy as np
 import utils
