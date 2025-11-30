@@ -1,7 +1,6 @@
 import pytesseract
 import google.generativeai as genai
 import json
-import matplotlib.pyplot as plt
 import re
 import cv2 as cv
 
