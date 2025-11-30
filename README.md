@@ -15,24 +15,6 @@ A FastAPI-based service that extracts line-item details from invoice images usin
 - Tesseract OCR installed on the system
 - Google API Key for Gemini access
 
-### System Dependencies
-
-**Windows (via Chocolatey):**
-```powershell
-pip install -r requirements.txt
-```
-
-**macOS (via Homebrew):**
-```bash
-brew install tesseract
-```
-
-**Linux (Ubuntu/Debian):**
-```bash
-sudo apt-get update
-sudo apt-get install -y tesseract-ocr
-```
-
 ## Installation
 
 1. **Clone the repository:**
