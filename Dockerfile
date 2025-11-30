@@ -21,11 +21,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Tesseract OCR + libraries
     tesseract-ocr \
     libtesseract-dev \
-    # Poppler utils for pdf2image
-    poppler-utils \
-    # Fonts & image libs that sometimes help with pillow/opencv
-    libgl1 \
-    libglib2.0-0 \
     # cleaning
     && rm -rf /var/lib/apt/lists/*
 
@@ -54,5 +49,5 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD curl -f http://localhost:${PORT}/docs || exit 1
 
 # Start the app with uvicorn (use your module path if different)
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
 # --------------------------------------------------------------------------------
