@@ -10,62 +10,122 @@ def extract_text_from_image(img):
     text = pytesseract.image_to_string(img, lang='eng')
     return text
 
-def structure_with_gemini(extracted_text, api_key):
+def structure_with_gemini(extracted_text, api_key, is_multipage=False):
     genai.configure(api_key=api_key)
     model = genai.GenerativeModel('gemini-2.5-flash')
 
-    prompt = f"""
-    You are an expert invoice data extraction system. Analyze the following raw invoice text.
-    Your task is to extract all line-item details, calculate the total item count, and
-    determine the final reconciled amount (sum of all item_amount values).
+    if is_multipage:
+        # Handle multi-page PDFs
+        pages_content = ""
+        for page_info in extracted_text:
+            pages_content += f"Page {page_info['page_no']}:\n{page_info['extracted_text']}\n\n"
+        
+        prompt = f"""
+        You are an expert invoice data extraction system. Analyze the following raw invoice text from multiple pages.
+        Your task is to extract all line-item details from all pages, calculate the total item count.
 
-    **INSTRUCTIONS:**
-    1.  Assume the entire text belongs to 'page_no': '1'.
-    2.  Extract the item name (Particulars), quantity (Qty.), rate (Rate), and amount (Amount)
-        for every line item in the bill's table. If quantity or rate are not mentioned, use 0.0
-    3.  Set 'total_item_count' to the count of unique line items found.
-    4.  Set 'reconciled_amount' to the sum of all extracted 'item_amount' values.
-    5.  The final output MUST strictly adhere to the provided JSON schema.
-    6.  Include a 'token_usage' object with 'total_tokens', 'input_tokens', and 'output_tokens'.
+        **INSTRUCTIONS:**
+        1.  Process each page separately and assign the correct 'page_no' to each item.
+        2.  Extract the item name (Particulars), quantity (Qty.), rate (Rate), and amount (Amount)
+            for every line item in the bill's table across all pages. If quantity or rate are not mentioned, use 0.0
+        3.  Set 'total_item_count' to the count of unique line items found across all pages.
+        4.  The final output MUST strictly adhere to the provided JSON schema.
+        5.  Include a 'token_usage' object with 'total_tokens', 'input_tokens', and 'output_tokens'.
 
-    **REQUIRED JSON SCHEMA:**
-    The final output must be a single JSON object (the response body for the API):
-    {{
-      "is_success": true,
-      "data": {{
-        "pagewise_line_items": [
-          {{
-            "page_no": "1",
-            "bill_items": [
+        **REQUIRED JSON SCHEMA:**
+        The final output must be a single JSON object (the response body for the API):
+        {{
+          "is_success": true,
+          "data": {{
+            "pagewise_line_items": [
               {{
-                "item_name": "...",
-                "item_amount": 0.00,
-                "item_rate": 0.00,
-                "item_quantity": 0.00
+                "page_no": "1",
+                "bill_items": [
+                  {{
+                    "item_name": "...",
+                    "item_amount": 0.00,
+                    "item_rate": 0.00,
+                    "item_quantity": 0.00
+                  }}
+                  // ... continue for all line items on this page
+                ]
+              }},
+              {{
+                "page_no": "2",
+                "bill_items": [
+                  // ... items from page 2
+                ]
               }}
-              // ... continue for all line items
-            ]
+              // ... continue for all pages
+            ],
+            "total_item_count": 0,
+            "token_usage": {{
+              "total_tokens": 0,
+              "input_tokens": 0,
+              "output_tokens": 0
+            }}
           }}
-        ],
-        "total_item_count": 0,
-        "reconciled_amount": 0.00,
-        "token_usage": {{
-          "total_tokens": 0,
-          "input_tokens": 0,
-          "output_tokens": 0
         }}
-      }}
-    }}
 
-    Invoice text:
-    ---
-    {extracted_text}
-    ---
+        Invoice text from all pages:
+        ---
+        {pages_content}
+        ---
 
-    Return ONLY the valid JSON object, without any surrounding markdown, backticks, or explanation. The output should strictly not contain any characters that are not part of the json syntax
-    """
+        Return ONLY the valid JSON object, without any surrounding markdown, backticks, or explanation. The output should strictly not contain any characters that are not part of the json syntax
+        """
+    else:
+        # Handle single image
+        prompt = f"""
+        You are an expert invoice data extraction system. Analyze the following raw invoice text.
+        Your task is to extract all line-item details, calculate the total item count, and
+        determine the final reconciled amount (sum of all item_amount values).
 
+        **INSTRUCTIONS:**
+        1.  Assume the entire text belongs to 'page_no': '1'.
+        2.  Extract the item name (Particulars), quantity (Qty.), rate (Rate), and amount (Amount)
+            for every line item in the bill's table. If quantity or rate are not mentioned, use 0.0
+        3.  Set 'total_item_count' to the count of unique line items found.
+        4.  Set 'reconciled_amount' to the sum of all extracted 'item_amount' values.
+        5.  The final output MUST strictly adhere to the provided JSON schema.
+        6.  Include a 'token_usage' object with 'total_tokens', 'input_tokens', and 'output_tokens'.
 
+        **REQUIRED JSON SCHEMA:**
+        The final output must be a single JSON object (the response body for the API):
+        {{
+          "is_success": true,
+          "data": {{
+            "pagewise_line_items": [
+              {{
+                "page_no": "1",
+                "bill_items": [
+                  {{
+                    "item_name": "...",
+                    "item_amount": 0.00,
+                    "item_rate": 0.00,
+                    "item_quantity": 0.00
+                  }}
+                  // ... continue for all line items
+                ]
+              }}
+            ],
+            "total_item_count": 0,
+            "reconciled_amount": 0.00,
+            "token_usage": {{
+              "total_tokens": 0,
+              "input_tokens": 0,
+              "output_tokens": 0
+            }}
+          }}
+        }}
+
+        Invoice text:
+        ---
+        {extracted_text}
+        ---
+
+        Return ONLY the valid JSON object, without any surrounding markdown, backticks, or explanation. The output should strictly not contain any characters that are not part of the json syntax
+        """
 
     response = model.generate_content(prompt)
     return response
