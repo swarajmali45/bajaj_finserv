@@ -18,15 +18,15 @@ def home():
     return {"message": "Hello, this is my API!"}
 
 @app.get("/add")
-def add(link: str):
+def add(document: str):
     try:
         if not api_key:
             raise HTTPException(status_code=500, detail="API_KEY not found in environment variables")
         
-        http_response = requests.get(link)
+        http_response = requests.get(document)
         
         # Check if the link is a PDF or image
-        if link.lower().endswith('.pdf'):
+        if document.lower().endswith('.pdf'):
             # Convert PDF to images
             pdf_images = convert_from_bytes(http_response.content)
             if not pdf_images:
